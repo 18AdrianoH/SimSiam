@@ -1,3 +1,32 @@
+# Task
+Rumen and Peter have given me this repo with a couple tasks as a sort of challenge.
+1. https://github.com/PatrickHua/SimSiam -- clone this repository and familiarize yourself
+with it,
+2. We will do experiments with the MNIST dataset.
+3. We would like to define a new transform that does (a) RandomResizedCrop with
+probability 1 and (b) Solarization with probability p, which is a hyperparameter we would
+like to play with, say p=[0, 0.2, 0.4, 0.6, 0.8, 1.0]. The intuition is that (a) should be very
+helpful for contrastive learning and that (b) will not be very helpful, since Solarization flips
+dark pixels to white and vice versa, so the variability that it introduces should not be that
+helpful. Note that you could write a new transform in ./augmentations/
+4. Define a new backbone in ./models/backbones that is suitable for MNIST inputs
+5. Use the existing code for contrastive learning (in ./main.py) and the linear protocol (in
+./linear_eval.py) to train the above settings.
+6. Once you are done, create a new github repository with the code and results and share
+it with Peter and me. In case you cannot make the setting run until completion, you can
+just share the relevant portions of the code that you have written, and we’ll take a look at
+it. It’s OK if you cannot finish, but it’s important how you approach this challenge. Our
+github names are “rdangovs” and “peterparity”
+7. Ask us questions anytime!
+8. There is no deadline for this challenge, but please send it back to us as soon as
+possible. The earlier we receive it, the earlier we might write a proposal. If we receive it
+very late, we risk not being able to write the proposal in time.
+9. Can you do a t-SNE visualization of the features that you learn from your contrastive
+learning method? Can you compute the instance-level variability that is coming from the data
+augmentation in your learned representations?
+10. https://docs.google.com/presentation/d/1T-kWHAwYoNnbumf6cyBJB3cUlrP8xlbFHyd3ccEkNxA/
+edit#slide=id.p
+
 # News
 It's been two months and I think I've finally discovered the **True** reasons why Simsiam/BYOL avoids collapsed solutions using stop gradient and predictor!!! Follow me on [twitter](https://twitter.com/tianyu_hua) and stay tuned!
 
