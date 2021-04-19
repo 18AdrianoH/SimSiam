@@ -1,8 +1,14 @@
 import torch
+import random
 import numpy
+import itertools
+
+from pprint import PrettyPrinter
+
+pp = PrettyPrinter()
 
 from torchvision.transforms import RandomResizedCrop
-from torchvision.transforms.function import solarize
+from torchvision.transforms.functional import solarize
 
 
 class SolarizedRandomResizedCrop(object):
@@ -35,7 +41,6 @@ class SolarizedRandomResizedCrop(object):
 
     DEFAULT_OUTPUT_SIZE = (16, 16)
     DEFAULT_SOL_PROB = 0.0
-    DEFAULT_SOL_MODE = SolarizedRandomResizedCrop.SOL_MODE_RAND
 
     def __init__(
         self, size=None, sol_prob=None, sol_thresh=None, sol_mode=None, **kwargs
@@ -50,17 +55,32 @@ class SolarizedRandomResizedCrop(object):
         self.sol_prob = sol_prob
         self.sol_thresh = sol_thresh
 
+        # NOTE look at scale and ratio: they might be important
+        # if len(kwargs) == 0:
+        #     kwargs["scale"] = (0.5, 1.0)
+        #     kwargs["ratio"] = (1.0, 1.0)
+
         self.random_cropper = RandomResizedCrop(self.size, **kwargs)
+        self._settings = kwargs
 
     def __call__(self, image, rgb=True):
+        # it is expected that your image will have dimensions (C x H x W) or (H x W)
         if isinstance(image, numpy.ndarray):
             raise NotImplementedError("Please transform into a tensor first.")
-        if not isinstance(image, torch.tensor):
+        if not isinstance(image, torch.Tensor):
             raise ValueError("Your image must be a torch tensor.")
 
+        do_squeeze = False
+        if len(image.shape) == 2:
+            image = image.unsqueeze(0)
+            do_squeeze = True
+
         random_cropped = self.random_cropper(image)
-        solarized_random_cropped = self.rand_solarize_tensor(random_cropped, rgb=rgb)
-        return solarized_random_cropped
+        solarized = self.rand_solarize_tensor(random_cropped, rgb=rgb)
+        output = solarized.squeeze() if do_squeeze else solarized
+        # output = output.type(torch.LongTensor) if rgb else output
+
+        return output
 
     def set_sol_prob(self, new_prob):
         self.sol_prob = new_prob
@@ -71,52 +91,27 @@ class SolarizedRandomResizedCrop(object):
     def set_sol_mode(self, new_mode):
         self.sol_mode = new_mode
 
+    def set_size(self, new_size):
+        self.size = new_size
+        self.random_cropper = RandomResizedCrop(self.size, **self._settings)
+
     def rand_solarize_tensor(self, tensor, rgb=True):
         # NOTE the tensor must be in the range [0, 255] for each of the channels
         # (i.e. RGB or black and white, format is expected); alternatively each channel
         # can be in the form [0, 1], but you must pass rgb=False for this.
 
-        # tensor must be (H x W x C) or (H x W)
+        # tensor must be (C x H x W)
 
         high = 255 if rgb else 1
-
-        if len(tensor.shape) == 3:
-            H, W, C = tensor.shape
-        elif len(tensor.shape == 2):
-            H, W = tensor.shape
-            C = None
-        else:
-            raise ValueError(
-                "Tensor has shape {} which is not supported. Pass in (H x W x C) or (H x W)".format(
-                    tensor.shape
-                )
-            )
+        C, H, W = tensor.shape
 
         if self.sol_prob is None:
             raise RuntimeError(
                 "You never initialized sol_prob. Try doing `set_sol_prob` or initializing with `sol_prob=your_float` with your_float in [0, 1]."
             )
 
-        # we prefer to copy to avoid aliasing issues, also you'll want to train multiple times on the same image
-        do_solarize = torch.rand((H, W)) < sol_prob
-
-        solarized = torch.zeros((H, W, C)) if C else torch.zeros((H, W))
-
-        # for very big tensors it would be faster to try to vectorize; also the if statement could be
-        # pulled out if we were not to vectorize but need a slight performance boost
-        for h in range(H):
-            for w in range(W):
-                if C:
-                    for c in range(C):
-                        solarized[h, w, c] = (
-                            high - tensor[h, w, c]
-                            if do_solarize[h, w]
-                            else tensor[h, w, c]
-                        )
-                else:
-                    solarized[h, w] = (
-                        high - tensor[h, w] if do_solarize[h, w] else tensor[h, w]
-                    )
+        do_solarize = (torch.rand((H, W)) < self.sol_prob).type(torch.FloatTensor)
+        solarized = (high - tensor) * do_solarize + tensor * (1 - do_solarize)
 
         return solarized
 
@@ -135,14 +130,59 @@ class SolarizedRandomResizedCrop(object):
 
 # a couple minimalist testers to do a sanity check
 def test_SolarizedRandomResizedCrop():
-    # TODO we need maybe 3-5 different examples with/without channels, with/without rgb
-    # and with/without square filters to try and run our transform
-    raise NotImplementedError
+    random.seed(0)
+    torch.manual_seed(0)
+    numpy.random.seed(0)
+
+    zeros_3channels = torch.zeros((3, 28, 28))
+    zeros_0channels = torch.zeros((28, 28))
+
+    sol_rand_mode = SolarizedRandomResizedCrop.SOL_MODE_RAND
+
+    # # check that solarization probability 0 does not
+    sol_cropper = SolarizedRandomResizedCrop(sol_prob=0.0, sol_mode=sol_rand_mode)
+    for t, kwargs in itertools.product(
+        [zeros_0channels, zeros_3channels], [{"rgb": True}, {"rgb": False}]
+    ):
+        sol_cropper.set_size((14, 14))
+
+        s = sol_cropper(t, **kwargs)
+        assert torch.max(s) == 0 and torch.min(s) == 0
+        assert s.shape[-1] == 14 and s.shape[-2] == 14
+
+        if len(t.shape) == 3:
+            assert t.shape[0] == s.shape[0]
+
+    # check that it will invert with probability 1.0 correctly
+    sol_cropper.set_sol_prob(1.0)
+    for t, kwargs in itertools.product(
+        [zeros_0channels, zeros_3channels], [{"rgb": True}, {"rgb": False}]
+    ):
+        sol_cropper.set_size((14, 14))
+
+        high = 255 if kwargs["rgb"] else 1
+
+        s = sol_cropper(t, **kwargs)
+        assert torch.max(s) == high and torch.min(s) == high
+        assert s.shape[-1] == 14 and s.shape[-2] == 14
+
+        if len(t.shape) == 3:
+            assert t.shape[0] == s.shape[0]
+
+    # these down here you are going to have to eyeball, they seemed
+    # to work to me
+    sol_cropper.set_sol_prob(0.5)
+    sol_cropper.set_size((5, 5))
+    t = (torch.rand((3, 8, 8)) * 255).type(torch.LongTensor)
+    print("Applying on\n{}".format(t))
+    s = sol_cropper(t, rgb=True)
+    print("Got\n{}\n".format(s))
+
+    t = torch.rand((8, 8))
+    print("Applying on\n{}".format(t))
+    s = sol_cropper(t, rgb=False)
+    print("Got\n{}\n".format(s))
 
 
 if __name__ == "__main__":
     test_SolarizedRandomResizedCrop()
-    # TODO goals for this file
-    # 1. test our implementation of the transforms with 3-5 static examples
-    # 2. use it in the mnist thing
-    raise NotImplementedError

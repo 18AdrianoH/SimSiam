@@ -137,7 +137,5 @@ def instance_level_variability(model, samples):
 
 if __name__ == "__main__":
     # TODO goals for this file
-    # 1. plot the weights with TSNE
-    # 2. plot the outputs of fc2 using a subset of the dataset with TSNE
-    # 3. calculate the instance level variability
+    # 1. plot the outputs of fc2 using a subset of the dataset with TSNE
     raise NotImplementedError
