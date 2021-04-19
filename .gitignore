@@ -6,3 +6,6 @@ tmp/
 .vscode/
 data/
 Data/
+
+# this is the default download location for MNIST
+datasets/dataset/*
