@@ -1,0 +1,47 @@
+name: adriano
+dataset: 
+  name: mnist
+  image_size: 28
+  num_workers: null # null -> None signifies singlethreaded
+
+model: 
+  name: simsiam
+  backbone: mnist_cnn
+  proj_layers: 2
+
+# this is basically copied from the cifar with slight modifications
+train:
+  optimizer: 
+    name: sgd
+    weight_decay: 0
+    momentum: 0.5
+  warmup_epochs: 0
+  warmup_lr: 0
+  base_lr: 0.01
+  final_lr: 0
+  num_epochs: 21
+  stop_at_epoch: 21
+  batch_size: 64
+  knn_monitor: False
+  knn_interval: 1
+  knn_k: 10
+eval: # linear evaluation, False will turn off automatic evaluation after training
+  optimizer: 
+    name: sgd
+    weight_decay: 0
+    momentum: 0.5
+  warmup_lr: 0
+  warmup_epochs: 0
+  base_lr: 0.1
+  final_lr: 0
+  batch_size: 128
+  num_epochs: 11s
+
+logger:
+  tensorboard: True
+  matplotlib: True
+
+seed: null # None type for yaml file
+# two things might lead to stochastic behavior other than seed:
+# worker_init_fn from dataloader and torch.nn.functional.interpolate 
+# (keep this in mind if you want to achieve 100% deterministic)

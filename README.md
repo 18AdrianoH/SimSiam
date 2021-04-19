@@ -1,3 +1,10 @@
+# Adriano's Notes
+To run debugging on my SimSiam try this.
+
+```
+CUDA_VISIBLE_DEVICES=0 python main.py --data_dir ../Data/ --log_dir ../logs/ -c configs/simsiam_mnist.yaml --ckpt_dir ~/.cache/ --hide_progress --download --debug
+```
+
 # Task
 Rumen and Peter have given me this repo with a couple tasks as a sort of challenge.
 1. https://github.com/PatrickHua/SimSiam -- clone this repository and familiarize yourself
@@ -51,7 +58,7 @@ pip install -r requirements.txt
 ### Run SimSiam
 
 ```
-CUDA_VISIBLE_DEVICES=0 python main.py --data_dir ../Data/ --log_dir ../logs/ -c configs/simsiam_cifar.yaml --ckpt_dir ~/.cache/ --hide_progress
+CUDA_VISIBLE_DEVICES=0 python main.py --data_dir ../Data/ --log_dir ../logs/ -c configs/simsiam_cifar.yaml --ckpt_dir ~/.cache/ --hide_progress --download --debug
 ```
 The data folder `../Data/` should look like this:
 ```

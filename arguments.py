@@ -36,9 +36,13 @@ def set_deterministic(seed):
         random.seed(seed) 
         np.random.seed(seed) 
         torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
-        torch.backends.cudnn.deterministic = True 
-        torch.backends.cudnn.benchmark = False 
+        try:
+            torch.cuda.manual_seed(seed)
+            torch.backends.cudnn.deterministic = True 
+            torch.backends.cudnn.benchmark = False 
+        except:
+            pass
+
 
 def get_args():
     parser = argparse.ArgumentParser()

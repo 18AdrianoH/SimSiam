@@ -72,6 +72,9 @@ class SimpleCNN(nn.Module):
         self.fc2 = nn.Linear(self.fc2_in, self.fc2_out)
         self.projector = nn.Linear(self.projector_in, self.projector_out)
 
+        self.representation = self.fc2
+        self.output_dim = self.fc2_out
+
     def forward(self, x, reshape=False):
         # NOTE: expects x in shape (N, C, H, W)
 

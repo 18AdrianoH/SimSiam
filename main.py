@@ -84,6 +84,8 @@ def main(device, args):
             local_progress.set_postfix(data_dict)
             logger.update_scalers(data_dict)
 
+        # ignore KNN monitor since it's coded to work ONLY on cuda enabled devices unfortunately
+        # check the mnist yaml to see
         if args.train.knn_monitor and epoch % args.train.knn_interval == 0: 
             accuracy = knn_monitor(model.module.backbone, memory_loader, test_loader, device, k=min(args.train.knn_k, len(memory_loader.dataset)), hide_progress=args.hide_progress) 
         

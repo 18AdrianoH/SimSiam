@@ -13,7 +13,6 @@ from torchvision.transforms.functional import solarize
 
 class SolarizedRandomResizedCrop(object):
     """
-    ***** What this Does *****
     This class will return a solarized random crop of an image for a size chosen a priori when you call it.
     You may pass in `size` for the output crop size and `sol_prob` for the probabiltiy that any given pixel
     (independently chosen) is solarized.
