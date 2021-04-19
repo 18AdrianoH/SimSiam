@@ -52,9 +52,11 @@ class SimpleCNN(nn.Module):
         w_c = (w_c - self.conv2_kernel + 1) // 2
 
         self.fc1_in = self.conv2_out_c * h_c * w_c
-        self.fc1_out = 64
+        self.fc1_out = 256
         self.fc2_in = self.fc1_out
-        self.fc2_out = self.num_classes
+        self.fc2_out = 64
+        self.projector_in = self.fc2_out
+        self.projector_out = self.num_classes
 
         self.conv1 = nn.Conv2d(
             self.conv1_in_c, self.conv1_out_c, kernel_size=self.conv1_kernel, stride=1
@@ -68,6 +70,7 @@ class SimpleCNN(nn.Module):
 
         self.fc1 = nn.Linear(self.fc1_in, self.fc1_out)
         self.fc2 = nn.Linear(self.fc2_in, self.fc2_out)
+        self.projector = nn.Linear(self.projector_in, self.projector_out)
 
     def forward(self, x, reshape=False):
         # NOTE: expects x in shape (N, C, H, W)
@@ -107,8 +110,10 @@ class SimpleCNN(nn.Module):
         x = self.fc2(x)
         return x
 
-    def fc2_weights(self):
-        return self.fc2.detach().cpu().clone()
+    def project(self, reps):
+        x = F.relu(reps)
+        x = self.projector(x)
+        return x
 
     def train(
         self,
@@ -154,7 +159,9 @@ class SimpleCNN(nn.Module):
                     optimizer.zero_grad()
 
                     reps = self(batch)
-                    probs = F.log_softmax(reps, dim=1)
+                    proj_reps = self.project(reps)
+
+                    probs = F.log_softmax(proj_reps, dim=1)
                     preds = torch.argmax(probs, 1)
 
                     loss = F.nll_loss(probs, targets)
@@ -180,10 +187,12 @@ class SimpleCNN(nn.Module):
                 writer.add_scalars(
                     "{}/losses/".format(train_name),
                     {"test": test_epoch_loss, "train": train_epoch_loss},
+                    epoch,
                 )
                 writer.add_scalars(
                     "{}/accuracies/".format(train_name),
                     {"test": test_epoch_acc, "train": train_epoch_acc},
+                    epoch,
                 )
 
             if epoch % 10 == 0 or epoch == 2 or epoch == num_epochs:
