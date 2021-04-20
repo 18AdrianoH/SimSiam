@@ -75,6 +75,12 @@ def main(args):
         local_progress = tqdm(train_loader, desc=f'Epoch {epoch}/{args.eval.num_epochs}', disable=True)
         
         for idx, (images, labels) in enumerate(local_progress):
+            # this will take the images and stick them to one another using the batch dimension
+            # so it expects [C x H x W] and will turn each into a [1 x C x H x W] and then for N it will
+            # concatenate them into a big tensor of [N x C x H x W]
+            if type(images) == list:
+                print(images[1].shape, len(images))
+                images = torch.cat([image.unsqueeze(dim=0) for image in images], dim=0)
 
             classifier.zero_grad()
             with torch.no_grad():

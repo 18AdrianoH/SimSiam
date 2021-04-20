@@ -7,9 +7,11 @@ from pprint import PrettyPrinter
 
 pp = PrettyPrinter()
 
-from torchvision.transforms import RandomResizedCrop
+from torchvision.transforms import Compose, RandomResizedCrop, ToTensor, Normalize
 from torchvision.transforms.functional import solarize
 
+# this is actually done in the datasets
+mnist_normalization = ((0.1307,), (0.3081,))
 
 class SolarizedRandomResizedCrop(object):
     """
@@ -126,6 +128,22 @@ class SolarizedRandomResizedCrop(object):
                 )
             )
 
+class MNIST_Transform(object):
+    def __init__(self, single=False, **kwargs):
+        # NOTE: might wanna try just ToTensor and Normalize for test?
+        self.transform = Compose([
+            ToTensor(),
+            Normalize((0.1307,), (0.3081,)),
+            SolarizedRandomResizedCrop(size=(18, 18), **kwargs)
+        ])
+        self.single = single
+    def __call__(self, x):
+        x1 = self.transform(x)
+        if self.single:
+            return x1
+        else:
+            x2 = self.transform(x)
+            return x1, x2
 
 # a couple minimalist testers to do a sanity check
 def test_SolarizedRandomResizedCrop():
@@ -133,8 +151,8 @@ def test_SolarizedRandomResizedCrop():
     torch.manual_seed(0)
     numpy.random.seed(0)
 
-    zeros_3channels = torch.zeros((3, 28, 28))
-    zeros_0channels = torch.zeros((28, 28))
+    zeros_3channels = torch.zeros((3, 18, 18))
+    zeros_0channels = torch.zeros((18, 18))
 
     sol_rand_mode = SolarizedRandomResizedCrop.SOL_MODE_RAND
 

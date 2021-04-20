@@ -3,10 +3,17 @@ import torchvision
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor, Normalize
 
+import sys
+sys.path.append("..")
+from augmentations.adriano_aug import MNIST_Transform
+
+# NOTE They actually already have MNIST and their tester uses their MNIST thing
+# this here I built before I knew, and it's primarily used for simply testing stuff
+
 # this will be used to transform the image into
 # something that we can feed into our NN
 # consider applying: Normalize((0.1307,), (0.3081,)), it was in the code I based this on
-image_transform = Compose([ToTensor()])
+image_transform = MNIST_Transform(single=True, sol_prob=0.5)
 
 # datasets basically are a sort of list datastructure we can query for specific images and labels
 train_dataset = torchvision.datasets.MNIST(
@@ -55,7 +62,7 @@ if __name__ == "__main__":
     print("displaying the dataset characteristics")
     for dataset, name in [(train_dataset, "train"), (test_dataset, "test")]:
         print("dataset", name)
-        # 1 x 28 x 28
+        # 1 x 28 x 28 -> 1 x 18 x 18
         # (tensor, label); label is an int
         print("first elem", dataset[0][0].shape, dataset[0][1])
 

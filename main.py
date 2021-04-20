@@ -15,11 +15,10 @@ from linear_eval import main as linear_eval
 from datetime import datetime
 
 def main(device, args):
-
     train_loader = torch.utils.data.DataLoader(
-        dataset=get_dataset(
+        dataset= get_dataset(
             transform=get_aug(train=True, **args.aug_kwargs), 
-            train=True,
+            train=True, 
             **args.dataset_kwargs),
         shuffle=True,
         batch_size=args.train.batch_size,
@@ -66,12 +65,18 @@ def main(device, args):
     logger = Logger(tensorboard=args.logger.tensorboard, matplotlib=args.logger.matplotlib, log_dir=args.log_dir)
     accuracy = 0 
     # Start training
+
+    print("Trying to train model {}".format(model))
+    print("Will run up to {} epochs of training".format(args.train.stop_at_epoch))
+
     global_progress = tqdm(range(0, args.train.stop_at_epoch), desc=f'Training')
     for epoch in global_progress:
         model.train()
         
         local_progress=tqdm(train_loader, desc=f'Epoch {epoch}/{args.train.num_epochs}', disable=args.hide_progress)
-        for idx, ((images1, images2), labels) in enumerate(local_progress):
+        for idx, _data in enumerate(local_progress):
+            # TODO looks like we might be missing the label?
+            ((images1, images2), labels) = _data
 
             model.zero_grad()
             data_dict = model.forward(images1.to(device, non_blocking=True), images2.to(device, non_blocking=True))

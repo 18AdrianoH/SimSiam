@@ -1,7 +1,7 @@
 name: adriano
 dataset: 
   name: mnist
-  image_size: 18
+  image_size: 28
   num_workers: 0 # null -> None signifies singlethreaded
 
 model: 
@@ -19,9 +19,9 @@ train:
   warmup_lr: 0
   base_lr: 0.01
   final_lr: 0
-  num_epochs: 11
-  stop_at_epoch: 11
-  batch_size: 16
+  num_epochs: 21
+  stop_at_epoch: 21
+  batch_size: 64
   knn_monitor: False
   knn_interval: 1
   knn_k: 10
@@ -34,7 +34,7 @@ eval: # linear evaluation, False will turn off automatic evaluation after traini
   warmup_epochs: 0
   base_lr: 0.1
   final_lr: 0
-  batch_size: 32
+  batch_size: 128
   num_epochs: 11s
 
 logger:

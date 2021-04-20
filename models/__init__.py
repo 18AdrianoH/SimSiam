@@ -17,8 +17,8 @@ def get_backbone(backbone, castrate=True):
 
 
 def get_model(model_cfg):
-
-    if model_cfg.name == "simsiam":
+    # TODO maybe here pass in the different initialization for the projectors?
+    if model_cfg.name == "simsiam" or model_cfg.name == "simsiam_mnist":
         model = SimSiam(get_backbone(model_cfg.backbone))
         if model_cfg.proj_layers is not None:
             model.projector.set_layers(model_cfg.proj_layers)

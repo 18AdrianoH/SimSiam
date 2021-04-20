@@ -39,7 +39,7 @@ class projection_MLP(nn.Module):
         )
         self.layer3 = nn.Sequential(
             nn.Linear(hidden_dim, out_dim),
-            nn.BatchNorm1d(hidden_dim)
+            nn.BatchNorm1d(out_dim)
         )
         self.num_layers = 3
     def set_layers(self, num_layers):
@@ -91,13 +91,26 @@ class SimSiam(nn.Module):
         super().__init__()
         
         self.backbone = backbone
-        self.projector = projection_MLP(backbone.output_dim)
+
+        # NOTE this is kind of a hack please make it nicer
+        # we deal with the mnist case a little bit differently because the
+        # dimensionality of the data is so different and I'm running locally
+        # so it will help runtime and interpretability
+        try:
+            if backbone.name == "SimpleCNN":
+                self.projector = projection_MLP(in_dim=64, hidden_dim=64, out_dim=64)
+                self.predictor = prediction_MLP(in_dim=64, hidden_dim=32, out_dim=64)
+            else:
+                self.projector = projection_MLP(backbone.output_dim)
+                self.predictor = prediction_MLP()
+        except:
+            self.projector = projection_MLP(backbone.output_dim)
+            self.predictor = prediction_MLP()
 
         self.encoder = nn.Sequential( # f encoder
             self.backbone,
             self.projector
         )
-        self.predictor = prediction_MLP()
     
     def forward(self, x1, x2):
 

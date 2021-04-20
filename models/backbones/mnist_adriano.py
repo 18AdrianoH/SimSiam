@@ -19,10 +19,12 @@ class SimpleCNN(nn.Module):
     some edits to get it to run nicely for our purposes.
     """
 
-    MNIST_IMG_SIZE = (1, 28, 28)
+    MNIST_IMG_SIZE = (1, 18, 18) # NOTE we had to shrink it cuz ugh
 
     def __init__(self, image_size=None, num_classes=10):
         super(SimpleCNN, self).__init__()
+
+        self.name = "SimpleCNN"
 
         self.image_size = image_size if image_size else SimpleCNN.MNIST_IMG_SIZE
         if len(self.image_size) == 3:
@@ -40,7 +42,7 @@ class SimpleCNN(nn.Module):
         self.conv1_in_c = self.C if self.C else 1
         self.conv1_out_c = 16
         self.conv2_in_c = self.conv1_out_c
-        self.conv2_out_c = 32
+        self.conv2_out_c = 24
 
         # there will be 2 max pools so we lose 4x from both height and width
         # then for the number of edges will be that (the matrix size)
@@ -51,12 +53,12 @@ class SimpleCNN(nn.Module):
         w_c = (self.W - self.conv1_kernel + 1) // 2
         w_c = (w_c - self.conv2_kernel + 1) // 2
 
-        self.fc1_in = self.conv2_out_c * h_c * w_c
-        self.fc1_out = 256
-        self.fc2_in = self.fc1_out
-        self.fc2_out = 64
-        self.projector_in = self.fc2_out
-        self.projector_out = self.num_classes
+        self.fc0_in = self.conv2_out_c * h_c * w_c
+        self.fc0_out = 128
+        self.fc1_in = self.fc0_out
+        self.fc1_out = 32
+        self.fc_in = self.fc1_out
+        self.fc_out = self.num_classes
 
         self.conv1 = nn.Conv2d(
             self.conv1_in_c, self.conv1_out_c, kernel_size=self.conv1_kernel, stride=1
@@ -68,12 +70,13 @@ class SimpleCNN(nn.Module):
 
         self.conv2_drop = nn.Dropout2d()
 
+        self.fc0 = nn.Linear(self.fc0_in, self.fc0_out)
         self.fc1 = nn.Linear(self.fc1_in, self.fc1_out)
-        self.fc2 = nn.Linear(self.fc2_in, self.fc2_out)
-        self.projector = nn.Linear(self.projector_in, self.projector_out)
 
-        self.representation = self.fc2
-        self.output_dim = self.fc2_out
+        # this is a projector, unfortunately due to the way the rest of the project works
+        # we settle on this name to minimize code
+        self.fc = nn.Linear(self.fc_in, self.fc_out)
+        # self.output_dim = None 
 
     def forward(self, x, reshape=False):
         # NOTE: expects x in shape (N, C, H, W)
@@ -105,20 +108,23 @@ class SimpleCNN(nn.Module):
 
         # shape will now be horizontal
         # shape (1 x (h / 4 x w / 4 x 32)) = (1 x (h x w x 8))
-        x = x.view((-1, self.fc1_in))
-        x = self.fc1(x)
+        x = x.view((-1, self.fc0_in))
+        x = self.fc0(x)
         x = F.relu(x)
         x = F.dropout(x)
+        # print("Dropped out")
 
-        x = self.fc2(x)
+        x = self.fc1(x)
+        # print("Last fully connected")
         return x
 
     def project(self, reps):
         x = F.relu(reps)
-        x = self.projector(x)
+        x = self.fc(x)
+        # print("Projected down")
         return x
 
-    def train(
+    def test_training(
         self,
         train_dataloader,
         test_dataloader,
@@ -247,13 +253,13 @@ def test_mnist():
     opt = optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
 
     # it's slow... this is just a test!
-    model.train(
+    model.test_training(
         train_dataloader,
         test_dataloader,
         optimizer=opt,
         writer=writer,
         save_dir=root_dir,
-        num_epochs=11,
+        num_epochs=3,
     )
     print("Finished training!")
 

@@ -2,7 +2,7 @@
 To run debugging on my SimSiam try this.
 
 ```
-CUDA_VISIBLE_DEVICES=0 python main.py --data_dir ../Data/ --log_dir ../logs/ -c configs/simsiam_mnist.yaml --ckpt_dir ~/.cache/ --hide_progress --download --debug
+CUDA_VISIBLE_DEVICES=0 python main.py --data_dir ./Data/ --log_dir ./logs/ -c configs/simsiam_mnist.yaml --ckpt_dir ~/.cache/ --hide_progress --download
 ```
 
 # Task
